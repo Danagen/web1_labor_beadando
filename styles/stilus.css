@@ -39,4 +39,26 @@ footer {
     margin-top: 20px;
 }
 
-/* Később ide jönnek a menü, űrlapok, galéria stb. stílusai */
+nav ul {
+    list-style: none; /* Lista jelölők eltüntetése */
+    padding: 0;
+    margin: 0;
+    text-align: center; /* Menüpontok középre */
+}
+
+nav ul li {
+    display: inline-block; /* Menüpontok egymás mellé */
+    margin: 0 10px; /* Térköz a menüpontok között */
+}
+
+nav ul li a {
+    color: #fff; /* Fehér link szín */
+    text-decoration: none; /* Aláhúzás eltüntetése */
+    padding: 5px 10px;
+}
+
+nav ul li a:hover,
+nav ul li.active a { /* Stílus az aktív és hover állapothoz */
+    background-color: #555; /* Sötétebb háttér */
+    border-radius: 3px;
+}

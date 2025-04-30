@@ -1,0 +1,9 @@
+RewriteEngine On
+
+# Ha a kérés nem egy létező fájl
+RewriteCond %{REQUEST_FILENAME} !-f
+# És a kérés nem egy létező könyvtár
+RewriteCond %{REQUEST_FILENAME} !-d
+
+# Akkor irányítsd át az index.php-re, a kérés URI-ját paraméterként átadva
+RewriteRule ^(.*)$ index.php?oldal=$1 [L,QSA]
