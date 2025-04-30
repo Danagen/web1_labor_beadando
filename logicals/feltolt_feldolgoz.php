@@ -6,6 +6,7 @@ if (session_status() == PHP_SESSION_NONE) {
 
 // Konfigurációs fájl betöltése megbízhatóbb útvonallal
 // Feltételezzük, hogy a PROJECT_ROOT konstans definiálva van a configban
+// és a configban definiálva vannak: $pdo, $kep_celmappa_abs, $kep_engedelyezett_tipusok, $kep_max_meret
 require_once(dirname(__DIR__) . '/includes/config.inc.php');
 
 // Oldal, ahova visszairányítunk
@@ -48,7 +49,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['kepfajl'])) {
         exit();
     }
 
-    // 3. Típus ellenőrzése
+    // 3. Típus ellenőrzése (MIME)
     $finfo = finfo_open(FILEINFO_MIME_TYPE);
     $mime_tipus = finfo_file($finfo, $feltoltott_fajl['tmp_name']);
     finfo_close($finfo);
@@ -65,34 +66,35 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['kepfajl'])) {
     $kiterjesztes = strtolower(pathinfo($eredeti_fajlnev, PATHINFO_EXTENSION));
     $uj_fajlnev = uniqid('kep_', true) . '.' . $kiterjesztes;
 
-    // Cél útvonal konstruálása a PROJECT_ROOT és a configban megadott mappa alapján
-    $cel_utvonal_teljes = PROJECT_ROOT . '/' . trim($kep_celmappa, '/') . '/' . $uj_fajlnev;
-    $cel_mappa_teljes = PROJECT_ROOT . '/' . trim($kep_celmappa, '/');
+    // Cél útvonal konstruálása az abszolút elérési úttal
+    $cel_utvonal_teljes = $kep_celmappa_abs . $uj_fajlnev;
+    $cel_mappa_teljes = $kep_celmappa_abs; // Mappa útvonala
 
     // 5. Fájl áthelyezése a végleges helyére
+    // Ellenőrizzük és hozzuk létre a mappát, ha szükséges
     if (!is_dir($cel_mappa_teljes)) {
          if (!mkdir($cel_mappa_teljes, 0777, true)) {
-             // Sikertelen mappa létrehozás
-             $_SESSION['upload_status'] = ['siker' => false, 'uzenet' => 'Nem sikerült létrehozni a célmappát: ' . $cel_mappa_teljes];
+             error_log("Nem sikerült létrehozni a mappát: " . $cel_mappa_teljes);
+             $_SESSION['upload_status'] = ['siker' => false, 'uzenet' => 'Nem sikerült létrehozni a célmappát a feltöltéshez.'];
              header("Location: " . $redirect_page);
              exit();
          }
     }
 
+    // Ellenőrizzük, írható-e a mappa
     if (!is_writable($cel_mappa_teljes)) {
-        // Ha a mappa nem írható
-         $_SESSION['upload_status'] = ['siker' => false, 'uzenet' => 'A célmappa nem írható: ' . $cel_mappa_teljes];
+         error_log("A célmappa nem írható: " . $cel_mappa_teljes);
+         $_SESSION['upload_status'] = ['siker' => false, 'uzenet' => 'A célmappa nem írható. Ellenőrizd a jogosultságokat!'];
          header("Location: " . $redirect_page);
          exit();
     }
-
 
     if (move_uploaded_file($feltoltott_fajl['tmp_name'], $cel_utvonal_teljes)) {
         // Sikeres fájlmozgatás, rögzítsük az adatbázisba
         try {
             $sql_insert = "INSERT INTO kepek (fajlnev, feltolto_id) VALUES (:fajlnev, :feltolto_id)";
             $stmt = $pdo->prepare($sql_insert);
-            $stmt->bindParam(':fajlnev', $uj_fajlnev); // Az új, egyedi nevet mentjük
+            $stmt->bindParam(':fajlnev', $uj_fajlnev);
             $stmt->bindParam(':feltolto_id', $feltolto_id);
 
             if ($stmt->execute()) {
@@ -101,15 +103,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['kepfajl'])) {
                 header("Location: " . $redirect_page);
                 exit();
             } else {
-                // Adatbázis hiba mentéskor - a fájl már fel lett töltve!
-                unlink($cel_utvonal_teljes); // Feltöltött fájl törlése hiba esetén
+                // Adatbázis hiba mentéskor
+                unlink($cel_utvonal_teljes);
                 $_SESSION['upload_status'] = ['siker' => false, 'uzenet' => 'Hiba történt az adatbázisba mentés során. A feltöltött fájl törölve lett.'];
                 header("Location: " . $redirect_page);
                 exit();
             }
         } catch (PDOException $e) {
              error_log("Képfeltöltés adatbázis hiba: " . $e->getMessage());
-             // Itt is próbáljuk meg törölni, ha már átmozgattuk, de a DB hiba jött
              if (file_exists($cel_utvonal_teljes)) {
                  unlink($cel_utvonal_teljes);
              }
@@ -120,8 +121,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['kepfajl'])) {
 
     } else {
         // Sikertelen fájlmozgatás
-         error_log("move_uploaded_file sikertelen ide: " . $cel_utvonal_teljes);
-         $_SESSION['upload_status'] = ['siker' => false, 'uzenet' => 'Hiba történt a fájl végleges helyre mozgatása során. Lehet jogosultsági probléma?'];
+         error_log("move_uploaded_file sikertelen ide: " . $cel_utvonal_teljes . ". PHP Error: " . $feltoltott_fajl['error']);
+         $_SESSION['upload_status'] = ['siker' => false, 'uzenet' => 'Hiba történt a fájl végleges helyre mozgatása során (move_uploaded_file).'];
          header("Location: " . $redirect_page);
          exit();
     }
