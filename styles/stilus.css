@@ -62,3 +62,86 @@ nav ul li.active a { /* Stílus az aktív és hover állapothoz */
     background-color: #555; /* Sötétebb háttér */
     border-radius: 3px;
 }
+
+/* === Reszponzív Szabályok === */
+
+/* Kisebb asztali gépek / Tabletek (pl. 992px alatt) */
+@media (max-width: 992px) {
+    main {
+        width: 90%; /* Növeljük a tartalom szélességét */
+    }
+
+    /* Galéria: 3 elem egy sorban */
+    .galeria-elem {
+        width: calc(33.333% - 20px);
+    }
+}
+
+/* Tabletek / Nagyobb mobilok (pl. 768px alatt) */
+@media (max-width: 768px) {
+    main {
+        width: 95%; /* Még szélesebb tartalom */
+        padding: 15px; /* Kisebb belső térköz */
+    }
+
+    header h1 {
+        font-size: 1.8em; /* Kisebb főcím */
+    }
+
+    nav ul li {
+        margin: 0 5px; /* Kisebb térköz a menüpontok között */
+    }
+
+    nav ul li a {
+        padding: 5px 8px;
+    }
+
+    /* Galéria: 2 elem egy sorban */
+    .galeria-elem {
+        width: calc(50% - 20px);
+    }
+
+    /* Receptek: A kép és a szöveg még egymás mellett lehet */
+    .recept-kep img {
+         max-width: 120px; /* Kicsit kisebb kép */
+    }
+     .recept-tartalom h3 {
+        font-size: 1.1em;
+    }
+
+    /* Kapcsolat űrlap (ha fix szélességű lenne, itt lehetne módosítani) */
+    /* form[name="kapcsolaturlap"] textarea { width: 90%; } */
+}
+
+/* Mobilok (pl. 576px alatt) */
+@media (max-width: 576px) {
+    nav ul li {
+         display: block; /* Menüpontok egymás alá */
+         margin: 5px 0; /* Térköz függőlegesen */
+    }
+
+     nav ul li a {
+         display: block; /* Teljes szélességű linkek */
+     }
+
+    /* Galéria: 1 elem egy sorban */
+    .galeria-elem {
+        width: calc(100% - 20px);
+    }
+
+    /* Receptek: Kép és szöveg egymás alá */
+    .recept-elem {
+        flex-direction: column; /* Elemeket függőlegesen rendezi */
+        align-items: center; /* Középre igazítás */
+        text-align: center;
+    }
+    .recept-kep {
+        margin-bottom: 10px;
+    }
+     .recept-kep img {
+         max-width: 80%; /* Kép max szélessége */
+     }
+     .recept-tartalom {
+         width: 100%; /* Teljes szélesség */
+     }
+}
